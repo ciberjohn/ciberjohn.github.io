@@ -1,0 +1,96 @@
+
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arranjo Pronto - Enviar SMS</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 1rem;
+      text-align: center;
+    }
+    img {
+      max-width: 100%;
+      margin-top: 1rem;
+      border: 1px solid #ccc;
+    }
+    input[type="text"] {
+      padding: 0.5rem;
+      font-size: 1rem;
+      width: 80%;
+    }
+    button, a {
+      padding: 1rem;
+      margin: 1rem;
+      font-size: 1.1rem;
+      display: inline-block;
+    }
+    a {
+      background: #4CAF50;
+      color: #fff;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <h2>Fotografar zona do número</h2>
+  <input type="file" accept="image/*" capture="environment" id="photoInput">
+  <div><img id="preview" /></div>
+  <p id="status"></p>
+  <label for="manualNumber">Número detectado ou inserir manualmente:</label><br/>
+  <input type="text" id="manualNumber" placeholder="+351912345678" /><br/>
+  <div id="smsLink"></div>
+
+  <script>
+    const photoInput = document.getElementById('photoInput');
+    const preview = document.getElementById('preview');
+    const status = document.getElementById('status');
+    const smsLink = document.getElementById('smsLink');
+    const manualNumber = document.getElementById('manualNumber');
+
+    function gerarBotaoSMS(numero) {
+      const smsBody = encodeURIComponent('O arranjo está completo. Pode vir levantar.');
+      const link = document.createElement('a');
+      link.href = `sms:${numero}?body=${smsBody}`;
+      link.textContent = 'Enviar SMS';
+      smsLink.innerHTML = '';
+      smsLink.appendChild(link);
+    }
+
+    manualNumber.addEventListener('input', () => {
+      if (/^\+3519\d{8}$/.test(manualNumber.value.trim())) {
+        gerarBotaoSMS(manualNumber.value.trim());
+      } else {
+        smsLink.innerHTML = '';
+      }
+    });
+
+    photoInput.addEventListener('change', async () => {
+      const file = photoInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async () => {
+        preview.src = reader.result;
+        status.textContent = 'A ler número...';
+
+        const { data: { text } } = await Tesseract.recognize(reader.result, 'eng');
+        const phoneMatch = text.replace(/\s|\./g, '').match(/(\+351)?(9\d{8})/);
+        if (phoneMatch) {
+          const number = '+351' + phoneMatch[2];
+          manualNumber.value = number;
+          gerarBotaoSMS(number);
+          status.textContent = 'Número detectado: ' + number;
+        } else {
+          status.textContent = 'Número não detectado. Pode inserir manualmente abaixo.';
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  </script>
+</body>
+</html>
