@@ -22,13 +22,23 @@
       font-size: 1rem;
       width: 80%;
     }
-    button, a {
+    label, p {
+      font-size: 1rem;
+    }
+    input[type="file"]::file-selector-button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 0.75rem;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-bottom: 1rem;
+    }
+    a {
       padding: 1rem;
       margin: 1rem;
       font-size: 1.1rem;
       display: inline-block;
-    }
-    a {
       background: #4CAF50;
       color: #fff;
       border-radius: 8px;
@@ -37,12 +47,13 @@
   </style>
 </head>
 <body>
-  <h2>Fotografar zona do número</h2>
+  <h2>Fotografar Talão</h2>
+  <label for="photoInput" style="display:block; font-weight:bold;">Tirar foto do talão:</label>
   <input type="file" accept="image/*" capture="environment" id="photoInput">
   <div><img id="preview" /></div>
   <p id="status"></p>
-  <label for="manualNumber">Número detectado ou inserir manualmente:</label><br/>
-  <input type="text" id="manualNumber" placeholder="+351912345678" /><br/>
+  <label for="manualNumber">Número detetado ou inserir manualmente:</label><br/>
+  <input type="text" id="manualNumber" placeholder="912223345" /><br/>
   <div id="smsLink"></div>
 
   <script>
@@ -62,8 +73,9 @@
     }
 
     manualNumber.addEventListener('input', () => {
-      if (/^\+3519\d{8}$/.test(manualNumber.value.trim())) {
-        gerarBotaoSMS(manualNumber.value.trim());
+      const cleaned = manualNumber.value.trim().replace(/\D/g, '');
+      if (/^9\d{8}$/.test(cleaned)) {
+        gerarBotaoSMS(cleaned);
       } else {
         smsLink.innerHTML = '';
       }
@@ -79,14 +91,14 @@
         status.textContent = 'A ler número...';
 
         const { data: { text } } = await Tesseract.recognize(reader.result, 'eng');
-        const phoneMatch = text.replace(/\s|\./g, '').match(/(\+351)?(9\d{8})/);
+        const phoneMatch = text.replace(/\s|\./g, '').match(/(9\d{8})/);
         if (phoneMatch) {
-          const number = '+351' + phoneMatch[2];
+          const number = phoneMatch[1];
           manualNumber.value = number;
           gerarBotaoSMS(number);
-          status.textContent = 'Número detectado: ' + number;
+          status.textContent = 'Número detetado: ' + number;
         } else {
-          status.textContent = 'Número não detectado. Pode inserir manualmente abaixo.';
+          status.textContent = 'Número não detetado. Pode inserir manualmente abaixo.';
         }
       };
       reader.readAsDataURL(file);
